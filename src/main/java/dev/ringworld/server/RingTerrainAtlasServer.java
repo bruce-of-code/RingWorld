@@ -19,6 +19,7 @@ import dev.ringworld.world.RingTerrainAtlas;
 import dev.ringworld.world.RingTerrainPreview;
 import dev.ringworld.world.RingTerrainPreviewStage;
 import dev.ringworld.world.RingSkyProfile;
+import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingSkySettings;
 import dev.ringworld.world.RingWorldSettings;
 import com.mojang.brigadier.CommandDispatcher;
@@ -124,7 +125,14 @@ public final class RingTerrainAtlasServer {
                                 .then(Commands.argument("style", StringArgumentType.word())
                                         .executes(context -> setSunStyle(
                                                 context.getSource(),
-                                                StringArgumentType.getString(context, "style"))))));
+                                                StringArgumentType.getString(context, "style")))))
+                        // Fixed sub-commands (not a free word) so both values tab-complete.
+                        .then(Commands.literal("daycycle")
+                                .executes(context -> reportDayCycle(context.getSource()))
+                                .then(Commands.literal("central")
+                                        .executes(context -> setDayCycle(context.getSource(), "central")))
+                                .then(Commands.literal("orbital")
+                                        .executes(context -> setDayCycle(context.getSource(), "orbital")))));
     }
 
     private static int chunkGenerationRate(CommandSourceStack source, Integer rate) {
@@ -198,6 +206,62 @@ public final class RingTerrainAtlasServer {
         return 1;
     }
 
+    private static int reportDayCycle(CommandSourceStack source) {
+        ServerLevel world = source.getServer().getLevel(Level.OVERWORLD);
+        if (world == null) {
+            source.sendFailure(Component.literal("RingWorld Overworld is unavailable"));
+            return 0;
+        }
+        RingSkyProfile.DayCycle cycle = RingSkySettings.get(world).profile().dayCycle();
+        source.sendSuccess(() -> Component.literal("RingWorld day cycle is " + cycle.label()
+                + ". Use /ringworld daycycle central|orbital to change it."), false);
+        if (cycle == RingSkyProfile.DayCycle.ORBITAL) {
+            // Local time and the server's sky light level (15 = full day) where you stand and
+            // at four longitudes; on 26.3 the sky light follows local time (phase 2).
+            RingGeometry geometry = RingWorldServer.geometryFor(world);
+            long worldTicks = world.getOverworldClockTime();
+            StringBuilder report = new StringBuilder("Local time here: ")
+                    .append(dayCycleLocal(world, geometry, worldTicks, source.getPosition().x));
+            for (int quarter = 0; quarter < 4; quarter++) {
+                double x = geometry.circumferenceBlocks() * quarter / 4.0;
+                report.append("\n").append("  X=").append((long)x).append(": ")
+                        .append(dayCycleLocal(world, geometry, worldTicks, x));
+            }
+            source.sendSuccess(() -> Component.literal(report.toString()), false);
+        }
+        return 1;
+    }
+
+    private static String dayCycleLocal(ServerLevel world, RingGeometry geometry, long worldTicks, double x) {
+        long local = Math.floorMod(dev.ringworld.world.RingOrbitalDay.localTicks(geometry, worldTicks, x), 24_000L);
+        long minutes = Math.floorMod((local + 6_000L) * 60L / 1_000L, 24L * 60L);
+        float skyLight = world.environmentAttributes().getValue(
+                net.minecraft.world.attribute.EnvironmentAttributes.SKY_LIGHT_LEVEL,
+                new net.minecraft.world.phys.Vec3(x, world.getSeaLevel(), 0.0));
+        return String.format(java.util.Locale.ROOT, "%02d:%02d (sky light %.1f)", minutes / 60, minutes % 60, skyLight);
+    }
+
+    /** Experiment 2026-11-22: central (fixed overhead star) or orbital (spinning ring, local time). */
+    private static int setDayCycle(CommandSourceStack source, String name) {
+        ServerLevel world = source.getServer().getLevel(Level.OVERWORLD);
+        if (world == null) {
+            source.sendFailure(Component.literal("RingWorld Overworld is unavailable"));
+            return 0;
+        }
+        RingSkyProfile.DayCycle cycle;
+        try {
+            cycle = RingSkyProfile.DayCycle.valueOf(name.toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            source.sendFailure(Component.literal("Unknown day cycle. Use central or orbital."));
+            return 0;
+        }
+        RingSkyProfile profile = RingSkySettings.get(world).profile().withDayCycle(cycle);
+        publishSkyProfile(source, world, profile);
+        source.sendSuccess(() -> Component.literal(
+                "RingWorld day cycle changed to " + cycle.label() + "."), true);
+        return 1;
+    }
+
     private static int setSunStyle(CommandSourceStack source, String name) {
         ServerLevel world = source.getServer().getLevel(Level.OVERWORLD);
         if (world == null) {
@@ -209,7 +273,7 @@ public final class RingTerrainAtlasServer {
             sunStyle = RingSkyProfile.LightSource.valueOf(
                     name.toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException exception) {
-            source.sendFailure(Component.literal("Unknown sun style. Use small, large, or none."));
+            source.sendFailure(Component.literal("Unknown sun style. Use small, large, vanilla, or none."));
             return 0;
         }
         RingSkyProfile profile = RingSkySettings.get(world).profile().withLightSource(sunStyle);

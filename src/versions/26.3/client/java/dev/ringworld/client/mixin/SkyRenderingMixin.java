@@ -48,13 +48,26 @@ abstract class SkyRenderingMixin {
         ((RingSkyView.Holder)state).ringworld$view(view);
         if (view == null) return;
         RingGeometry geometry = view.geometry();
-        state.sunAngle = RingSkyCycle.FIXED_SUN_ANGLE_RADIANS;
-        state.moonAngle = RingSkyCycle.FIXED_SUN_ANGLE_RADIANS;
-        // Stars are infinitely distant but directionally fixed in physical
-        // ring space. Counter-rotate the player's local tangent frame so a
-        // cluster below one side appears overhead on the opposite side.
-        state.starAngle = RingSkyCycle.starFieldAngleRadians(
-                geometry, camera.position().x);
+        if (dev.ringworld.client.RingLocalClock.orbitalActive()) {
+            // Orbital day (experiment 2026-11-22): the clock already reports local time at the
+            // camera, and vanilla's sky axis (world Z) is the ring's axis, so the sun and the
+            // stars turn together about it. Use a linear angle rather than vanilla's eased
+            // sun_angle track so the sun matches the distant terminator exactly
+            // (RingOrbitalDay; noon = 0, rising toward +X like vanilla).
+            double local = Math.floorMod(world.getOverworldClockTime(), 24_000L) + tickProgress;
+            float angle = (float)(2.0 * Math.PI * (local - 6000.0) / 24_000.0);
+            state.sunAngle = angle;
+            state.moonAngle = angle;
+            state.starAngle = angle;
+        } else {
+            state.sunAngle = RingSkyCycle.FIXED_SUN_ANGLE_RADIANS;
+            state.moonAngle = RingSkyCycle.FIXED_SUN_ANGLE_RADIANS;
+            // Stars are infinitely distant but directionally fixed in physical
+            // ring space. Counter-rotate the player's local tangent frame so a
+            // cluster below one side appears overhead on the opposite side.
+            state.starAngle = RingSkyCycle.starFieldAngleRadians(
+                    geometry, camera.position().x);
+        }
         state.sunriseAndSunsetColor = new org.joml.Vector4f();
         RingSkyProfile skyProfile = view.profile();
         switch (skyProfile.backdrop()) {
@@ -128,16 +141,35 @@ abstract class SkyRenderingMixin {
         RingSkyView view = RingSkyView.current();
         if (view == null) return;
 
+        boolean orbital = dev.ringworld.client.RingLocalClock.orbitalActive();
+        // Orbital: the star is at infinity behind everything, so draw it BEFORE the Atlas.
+        // The distant floor, the rims and the far arch then hide it exactly where they are in
+        // the way; it shows only where the line of sight escapes past the band's edge, which is
+        // the physical "sun goes under the ring" near the horizon.
+        if (orbital) ringworld$drawSun(view, alpha, matrices, state.sunAngle, true);
+
         RingSurfaceTextureRenderer.render(renderTarget, matrices, view, alpha);
         // Experiment 2026-11-22: continue the clouds around the ring beyond vanilla's range.
         dev.ringworld.client.render.RingCloudRing.render(renderTarget, matrices, view);
 
         // Vanilla drew stars after its first sun. The ring covers those stars
         // but stays behind the central star, so redraw the fixed sun once.
+        if (!orbital) ringworld$drawSun(view, alpha, matrices, 0.0F, false);
+    }
+
+    @Unique
+    private void ringworld$drawSun(RingSkyView view, float alpha, PoseStack matrices, float sunAngle, boolean orbital) {
         if (view.profile().lightSource() != RingSkyProfile.LightSource.NONE) {
             matrices.pushPose();
-            matrices.rotate(Axis.XP.rotation(view.starTilt()));
-            matrices.rotate(Axis.YP.rotationDegrees(-90.0F));
+            if (orbital) {
+                // Vanilla's sun pose, then the tilt toward +Z (out of the ring's plane).
+                matrices.rotate(Axis.YP.rotationDegrees(-90.0F));
+                matrices.rotate(Axis.XP.rotation(sunAngle));
+                matrices.rotate(Axis.ZP.rotation((float)-dev.ringworld.world.RingOrbitalDay.TILT_RADIANS));
+            } else {
+                matrices.rotate(Axis.XP.rotation(view.starTilt()));
+                matrices.rotate(Axis.YP.rotationDegrees(-90.0F));
+            }
             RingSkyView previous = ringworld$centeredSunView;
             ringworld$centeredSunView = view;
             CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();

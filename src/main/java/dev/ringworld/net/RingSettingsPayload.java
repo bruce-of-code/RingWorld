@@ -51,10 +51,12 @@ public record RingSettingsPayload(int width, int circumference, long seed, int w
             StreamCodec.ofMember((profile, buffer) -> {
                 buffer.writeVarInt(profile.backdrop().id());
                 buffer.writeVarInt(profile.lightSource().id());
+                buffer.writeVarInt(profile.dayCycle().id());
                 buffer.writeVarInt(profile.formatVersion());
             }, buffer -> new RingSkyProfile(
                     RingSkyProfile.Backdrop.fromId(buffer.readVarInt()),
                     RingSkyProfile.LightSource.fromId(buffer.readVarInt()),
+                    RingSkyProfile.DayCycle.fromId(buffer.readVarInt()),
                     buffer.readVarInt()));
     private static final StreamCodec<RegistryFriendlyByteBuf, RingWorldGenerationSettings>
             GENERATION_SETTINGS_CODEC = StreamCodec.ofMember((settings, buffer) -> {

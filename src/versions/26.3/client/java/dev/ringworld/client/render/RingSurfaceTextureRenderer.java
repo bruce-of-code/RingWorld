@@ -172,7 +172,8 @@ public final class RingSurfaceTextureRenderer {
                 new Vector3f((float)cameraAngle, (float)camera.z, RingSurfaceGpu.farBackgroundDepth()),
                 // Translation stores the eye. The W components of columns 0 and 1 carry
                 // the post-lighting flag and the active pack’s contrast strength.
-                new Matrix4f().translation((float)camera.x, (float)camera.y, (float)camera.z)
+                dev.ringworld.client.RingLocalClock.orbitalShaderParams(world,
+                        new Matrix4f().translation((float)camera.x, (float)camera.y, (float)camera.z))
                         .m03(deferred ? 1.0F : 0.0F)
                         .m13(deferred ? dev.ringworld.client.RingAtlasContrast.strength() : 0.0F));
 

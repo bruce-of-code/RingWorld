@@ -236,6 +236,7 @@ public final class RingWorldCreationScreen extends Screen {
         String label = layout().compact() ? switch (sunStyle) {
             case SMALL -> "Sm";
             case LARGE -> "Lg";
+            case VANILLA -> "Va";
             case NONE -> "No";
         } : sunStyle.label();
         return Component.literal(layout().compact() ? "Sun:" + label : "Sun: " + label);

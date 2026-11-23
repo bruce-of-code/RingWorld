@@ -15,6 +15,8 @@ layout(location = 0) out vec2 texCoord0;
 layout(location = 1) out vec4 vertexColor;
 layout(location = 2) out float intrinsicDistance;
 layout(location = 6) out float handoffDistance;
+// Global cylinder point; the fragment derives its canonical angle from it (no wrap seam).
+layout(location = 7) out vec2 ringPlane;
 layout(location = 3) out float intrinsicHeight;
 layout(location = 4) out float intrinsicWidth;
 layout(location = 5) flat out vec3 depthMapping;
@@ -88,5 +90,6 @@ void main() {
     handoffDistance = length(vec2(intrinsicDistance, worldY - cameraY));
     intrinsicWidth = Position.z;
     texCoord0 = UV0;
+    ringPlane = Position.xy;
     vertexColor = Color;
 }

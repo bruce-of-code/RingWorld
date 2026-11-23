@@ -119,8 +119,8 @@ public final class RingCloudRing {
             float drift = ((RingCloudFrame.gameTime() % (textureWidth * TICKS_PER_CELL))
                     + RingCloudFrame.partialTick()) * BLOCKS_PER_TICK;
             float range = RingCloudFrame.rangeChunks() * 16.0F;
-            Matrix4f params = new Matrix4f()
-                    .translation((float)camera.x, (float)camera.y, (float)camera.z)
+            Matrix4f params = dev.ringworld.client.RingLocalClock.orbitalShaderParams(world, new Matrix4f()
+                    .translation((float)camera.x, (float)camera.y, (float)camera.z))
                     .m00(range * 0.85F).m01(range)
                     .m10(drift).m11(Z_OFFSET);
             GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(

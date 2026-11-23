@@ -66,7 +66,14 @@
     "WorldTickSchedulerMixin",
     "LocatorWaypointServerMixin",
     "LocatorAzimuthConnectionMixin",
-    "ChunkGeneratorBandLocateMixin"
+    "ChunkGeneratorBandLocateMixin",
+    "OrbitalValueSamplerMixin",
+    "OrbitalAttributeSystemMixin",
+    "OrbitalServerClockMixin",
+    "OrbitalLevelDaylightMixin",
+    "OrbitalServerLevelMixin",
+    "OrbitalServerPlayerMixin",
+    "OrbitalPhantomSpawnerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -9,7 +9,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
 /** Live server-authoritative sky presentation update; terrain identity is unchanged. */
-public record RingSkyProfilePayload(int backdrop, int lightSource, int formatVersion)
+public record RingSkyProfilePayload(int backdrop, int lightSource, int dayCycle, int formatVersion)
         implements CustomPacketPayload {
     public static final Type<RingSkyProfilePayload> ID = new Type<>(
             Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "sky_profile_v1"));
@@ -17,17 +17,20 @@ public record RingSkyProfilePayload(int backdrop, int lightSource, int formatVer
             StreamCodec.composite(
                     ByteBufCodecs.VAR_INT, RingSkyProfilePayload::backdrop,
                     ByteBufCodecs.VAR_INT, RingSkyProfilePayload::lightSource,
+                    ByteBufCodecs.VAR_INT, RingSkyProfilePayload::dayCycle,
                     ByteBufCodecs.VAR_INT, RingSkyProfilePayload::formatVersion,
                     RingSkyProfilePayload::new);
 
     public static RingSkyProfilePayload from(RingSkyProfile profile) {
         return new RingSkyProfilePayload(
-                profile.backdrop().id(), profile.lightSource().id(), profile.formatVersion());
+                profile.backdrop().id(), profile.lightSource().id(), profile.dayCycle().id(),
+                profile.formatVersion());
     }
 
     public RingSkyProfile profile() {
         return new RingSkyProfile(RingSkyProfile.Backdrop.fromId(backdrop),
-                RingSkyProfile.LightSource.fromId(lightSource), formatVersion);
+                RingSkyProfile.LightSource.fromId(lightSource), RingSkyProfile.DayCycle.fromId(dayCycle),
+                formatVersion);
     }
 
     @Override

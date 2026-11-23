@@ -5,22 +5,26 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.Arrays;
 
 /** Server-owned visual presentation of the RingWorld sky and visible light source. */
-public record RingSkyProfile(Backdrop backdrop, LightSource lightSource, int formatVersion) {
+public record RingSkyProfile(Backdrop backdrop, LightSource lightSource, DayCycle dayCycle, int formatVersion) {
     public static final int FORMAT_VERSION = 1;
     public static final RingSkyProfile DEFAULT = new RingSkyProfile(
-            Backdrop.ATMOSPHERE, LightSource.SMALL, FORMAT_VERSION);
+            Backdrop.ATMOSPHERE, LightSource.SMALL, DayCycle.CENTRAL, FORMAT_VERSION);
 
     public static final Codec<RingSkyProfile> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.fieldOf("backdrop").xmap(Backdrop::fromId, Backdrop::id)
                     .forGetter(RingSkyProfile::backdrop),
             Codec.INT.fieldOf("lightSource").xmap(LightSource::fromId, LightSource::id)
                     .forGetter(RingSkyProfile::lightSource),
+            // Absent in saves from before the orbital day (2026-11-22): central.
+            Codec.INT.optionalFieldOf("dayCycle", 0).xmap(DayCycle::fromId, DayCycle::id)
+                    .forGetter(RingSkyProfile::dayCycle),
             Codec.INT.fieldOf("format").forGetter(RingSkyProfile::formatVersion)
     ).apply(instance, RingSkyProfile::new));
 
     public RingSkyProfile {
         if (backdrop == null) throw new IllegalArgumentException("sky backdrop is required");
         if (lightSource == null) throw new IllegalArgumentException("sky light source is required");
+        if (dayCycle == null) dayCycle = DayCycle.CENTRAL;
         if (formatVersion != FORMAT_VERSION) {
             throw new IllegalArgumentException("unsupported sky profile format " + formatVersion);
         }
@@ -50,6 +54,8 @@ public record RingSkyProfile(Backdrop backdrop, LightSource lightSource, int for
     public enum LightSource {
         SMALL(0, "Small", 3.0F),
         LARGE(1, "Large", 15.0F),
+        /** Vanilla's own sun quad (half-width 30, about 9 degrees across). */
+        VANILLA(3, "Vanilla", 30.0F),
         NONE(2, "None", 0.0F);
 
         private final int id;
@@ -74,11 +80,50 @@ public record RingSkyProfile(Backdrop backdrop, LightSource lightSource, int for
         }
     }
 
+    /** Pre-orbital form: central day cycle. */
+    public RingSkyProfile(Backdrop backdrop, LightSource lightSource, int formatVersion) {
+        this(backdrop, lightSource, DayCycle.CENTRAL, formatVersion);
+    }
+
+    /**
+     * How day and night happen (experiment, 2026-11-22).
+     * <ul>
+     *   <li>CENTRAL: the original design. A fixed star at the ring's centre, straight overhead
+     *       everywhere; day and night are a global dimming driven by the world clock.</li>
+     *   <li>ORBITAL: the star is far away, {@link RingOrbitalDay#TILT_DEGREES} out of the ring's
+     *       plane, and the ring's spin (one turn per Minecraft day) makes the day. Local time
+     *       depends on longitude, the sun rises and sets, and half the ring is in night.</li>
+     * </ul>
+     */
+    public enum DayCycle {
+        CENTRAL(0, "Central"),
+        ORBITAL(1, "Orbital");
+
+        private final int id;
+        private final String label;
+
+        DayCycle(int id, String label) { this.id = id; this.label = label; }
+        public int id() { return id; }
+        public String label() { return label; }
+        public DayCycle next() {
+            DayCycle[] values = values();
+            return values[(ordinal() + 1) % values.length];
+        }
+        public static DayCycle fromId(int id) {
+            return Arrays.stream(values()).filter(value -> value.id == id).findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("unknown day cycle " + id));
+        }
+    }
+
     public RingSkyProfile withBackdrop(Backdrop value) {
-        return new RingSkyProfile(value, lightSource, FORMAT_VERSION);
+        return new RingSkyProfile(value, lightSource, dayCycle, FORMAT_VERSION);
     }
 
     public RingSkyProfile withLightSource(LightSource value) {
-        return new RingSkyProfile(backdrop, value, FORMAT_VERSION);
+        return new RingSkyProfile(backdrop, value, dayCycle, FORMAT_VERSION);
+    }
+
+    public RingSkyProfile withDayCycle(DayCycle value) {
+        return new RingSkyProfile(backdrop, lightSource, value, FORMAT_VERSION);
     }
 }

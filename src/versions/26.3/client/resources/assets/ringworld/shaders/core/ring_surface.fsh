@@ -16,6 +16,7 @@ layout(location = 0) in vec2 texCoord0;
 layout(location = 1) in vec4 vertexColor;
 layout(location = 2) in float intrinsicDistance;
 layout(location = 6) in float handoffDistance;
+layout(location = 7) in vec2 ringPlane;
 layout(location = 3) in float intrinsicHeight;
 layout(location = 4) in float intrinsicWidth;
 layout(location = 5) flat in vec3 depthMapping;
@@ -44,6 +45,24 @@ vec4 filteredWall(vec2 uv, float strip) {
     float low = floor(level);
     float high = ceil(level);
     return mix(wallMip(uv, strip, low), wallMip(uv, strip, high), fract(level));
+}
+
+
+// Orbital day (experiment 2026-11-22). TextureMat[2]: x = world day fraction, y = 1 when the
+// orbital cycle is active, z = cos(tilt). Local day fraction at a point is the world fraction
+// minus its longitude's share (RingOrbitalDay), so the sun's local elevation sine is
+// cos(tilt) * cos(TAU * (local - 0.25)). Returns 0 (night) .. 1 (full day).
+float ring_orbital_daylight(float canonicalAngle, out float elevation) {
+    float local = TextureMat[2].x - canonicalAngle / 6.28318530717958647692;
+    elevation = TextureMat[2].z * cos(6.28318530717958647692 * (local - 0.25));
+    return smoothstep(-0.10, 0.25, elevation);
+}
+
+vec3 ring_orbital_light(float daylight, float elevation) {
+    vec3 night = vec3(0.045, 0.050, 0.085);
+    // Warm low sun near the terminator, neutral once it is well up.
+    vec3 day = mix(vec3(1.00, 0.66, 0.40), vec3(1.0), smoothstep(0.02, 0.35, elevation));
+    return mix(night, day, daylight);
 }
 
 void main() {
@@ -154,6 +173,15 @@ void main() {
     // the visual LOD without pretending that the static atlas contains lamps.
     const vec2 fullSkyNoBlockLight = vec2(0.5 / 16.0, 15.5 / 16.0);
     vec3 surfaceLight = texture(Sampler2, fullSkyNoBlockLight).rgb;
+    // Orbital day: light each distant point by ITS local sun, not the camera's sky, so
+    // the day half, the night half and the terminator show on the far ring.
+    bool orbitalDay = TextureMat[2].y > 0.5;
+    float orbitalElevation = 0.0;
+    float orbitalDaylight = 1.0;
+    if (orbitalDay) {
+        orbitalDaylight = ring_orbital_daylight(atan(ringPlane.x, -ringPlane.y), orbitalElevation);
+        surfaceLight = ring_orbital_light(orbitalDaylight, orbitalElevation);
+    }
     vec3 litTerrain = sampled.rgb * surfaceLight;
     if (waterBacking) litTerrain *= ring_handoff_water_backing(handoffDistance);
     // Surface texture alpha is a separate server-authored exposed block-light
@@ -183,7 +211,10 @@ void main() {
     // The incomplete texture is deliberately opaque: real generated colours
     // flavour nearby unknown cells, then each published revision cross-fades
     // into the next instead of exposing a hard tile update.
-    vec3 terrain = mix(ring_handoff_edge_color(FogColor.rgb), litTerrain, reveal);
+    vec3 edgeColor = ring_handoff_edge_color(FogColor.rgb);
+    // The camera's sky colour is local; do not paint daytime haze over the far night side.
+    if (orbitalDay) edgeColor *= mix(0.12, 1.0, orbitalDaylight);
+    vec3 terrain = mix(edgeColor, litTerrain, reveal);
     float fog = ring_handoff_environment(handoffDistance, FogEnvironmentalStart, FogEnvironmentalEnd);
     fragColor = vec4(mix(terrain, FogColor.rgb, fog * FogColor.a), coverageAlpha);
 }

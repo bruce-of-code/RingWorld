@@ -32,6 +32,8 @@
     "RingDefaultUniformsMixin",
     "RingPipelineUniformsMixin",
     "CloudRendererMixin",
+    "ClientClockInstanceMixin",
+    "ClientClockManagerMixin",
     "LivingEntitySleepingPositionMixin",
     "MinecraftMixin",
     "PlayerPositionDebugHudEntryMixin",

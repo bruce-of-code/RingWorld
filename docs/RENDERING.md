@@ -785,6 +785,39 @@ twenty-panel implementation and its revert checklist remain frozen in
 [`SUN_RENDERING_SNAPSHOT_2026-07-26.md`](SUN_RENDERING_SNAPSHOT_2026-07-26.md).
 Illumination is intentionally global rather than position-dependent.
 
+### Orbital day cycle (experiment branch, 2026-11-22; 26.3 client)
+
+`/ringworld daycycle central|orbital` (saved in the sky profile, default `central`)
+selects a second model: the star is far away, 15 degrees out of the ring's plane, and the
+ring spins once per Minecraft day. Local time is
+`world - (wrapX(x) / C) * 24000` (`RingOrbitalDay`); with that rule vanilla's sky axis
+(world Z) is the ring's axis and vanilla's conventions are physically correct, which
+`RingOrbitalDayTest` checks against the 3-D star direction.
+
+- The client's overworld `ClientClockInstance` reports local time at the camera
+  (`RingLocalClock`, `ClientClockInstanceMixin`), so every timeline-driven visual
+  (sky, fog and cloud colour, star brightness, the lightmap's sky factor, the sun tint)
+  follows the player's longitude with no per-effect hooks. The clock's own bookkeeping
+  uses the raw field, so the offset never accumulates.
+- Sun and stars turn together at a linear angle from local time; the sun gets the 15
+  degree tilt and is drawn before the Atlas, so the far floor, the rims and the opposite
+  arch hide it physically (it sets about 9 degrees up mid-band). `/ringworld sun vanilla`
+  adds vanilla's 9-degree quad to the Small/Large/None sizes.
+- The Atlas surface and the distant cloud ring light each point by its own local sun
+  (`TextureMat[2]` carries the world day fraction, an active flag and cos(tilt)), so the
+  day half, the night half and a warm terminator show on the far ring; far haze is
+  darkened on the night side.
+- Phase 2 (server, `RingServerOrbital` and the `Orbital*Mixin` set, 26.3 only via a 26.3
+  copy of `ringworld.mixins.json`): timeline attributes queried at a position are evaluated
+  at that position's local time (undead burning, bees, creaking, eyeblossoms, villager
+  schedules, daylight-detector sun angle, sky light); sky darkness is per longitude for
+  spawn-light checks and for whatever is ticking (entities, players, bed use), so AI goals
+  that ask "is it bright outside?" get their own answer; phantoms gate on each player's
+  local sky. Sleep counts only players in local night (or asleep) and advances the clock
+  until every sleeper reaches local dawn, moving every longitude forward by the same amount.
+  `/ringworld daycycle` reports local time and server sky light at your position and at four
+  longitudes. Still global: moon phase and anything keyed to the day count.
+
 ## Render order
 
 The intended conceptual order is:

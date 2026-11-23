@@ -8,6 +8,7 @@
 //   ModelOffset.x / .y  camera canonical angle / Z
 //   TextureMat[0].xy    fade-in start / end distance (vanilla cloud range)
 //   TextureMat[1].xy    pattern offset X (time drift) / Z (vanilla's 3.96)
+//   TextureMat[2].xyz   orbital day: world day fraction / active flag / cos(tilt)
 
 #include <minecraft:dynamictransforms.glsl>
 #include <minecraft:globals.glsl>
@@ -20,6 +21,24 @@ layout(location = 0) in vec2 intrinsicXZ;
 layout(location = 0) out vec4 fragColor;
 
 const float TAU = 6.28318530717958647692;
+
+
+// Orbital day (experiment 2026-11-22). TextureMat[2]: x = world day fraction, y = 1 when the
+// orbital cycle is active, z = cos(tilt). Local day fraction at a point is the world fraction
+// minus its longitude's share (RingOrbitalDay), so the sun's local elevation sine is
+// cos(tilt) * cos(TAU * (local - 0.25)). Returns 0 (night) .. 1 (full day).
+float ring_orbital_daylight(float canonicalAngle, out float elevation) {
+    float local = TextureMat[2].x - canonicalAngle / 6.28318530717958647692;
+    elevation = TextureMat[2].z * cos(6.28318530717958647692 * (local - 0.25));
+    return smoothstep(-0.10, 0.25, elevation);
+}
+
+vec3 ring_orbital_light(float daylight, float elevation) {
+    vec3 night = vec3(0.045, 0.050, 0.085);
+    // Warm low sun near the terminator, neutral once it is well up.
+    vec3 day = mix(vec3(1.00, 0.66, 0.40), vec3(1.0), smoothstep(0.02, 0.35, elevation));
+    return mix(night, day, daylight);
+}
 
 void main() {
     float circumference = float(RingWorldLayout.y);
@@ -40,5 +59,12 @@ void main() {
     float alpha = ColorModulator.a * fadeIn * mix(1.0, 0.45, pow(fraction, 0.7));
     // Vanilla shades a cloud underside 0.7 and top 1.0; a flat sheet seen from either
     // side splits the difference.
-    fragColor = vec4(ColorModulator.rgb * 0.82, alpha);
+    vec3 cloud = ColorModulator.rgb;
+    if (TextureMat[2].y > 0.5) {
+        // Each distant cloud is lit by its own local sun, not the camera's cloud colour.
+        float elevation;
+        float daylight = ring_orbital_daylight(TAU * intrinsicXZ.x / circumference, elevation);
+        cloud = ring_orbital_light(daylight, elevation);
+    }
+    fragColor = vec4(cloud * 0.82, alpha);
 }
