@@ -169,6 +169,19 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
         if (ringworld$geometry != null && RingGenerationBoundary.isExterior(chunk, ringworld$geometry)) ci.cancel();
     }
 
+    /** Experiment 2026-11-22: fill the river channel after carvers; see
+     *  {@link dev.ringworld.world.RingRiverWater}. */
+    @Inject(method = "applyCarvers", at = @At("TAIL"))
+    private void ringworld$fillRiverChannel(WorldGenRegion region, long seed, RandomState noiseConfig,
+                                            BiomeManager biomeAccess, StructureManager structures,
+                                            ChunkAccess chunk, CallbackInfo ci) {
+        if (ringworld$geometry == null || !ringworld$generationSettings.continuousRiver()
+                || RingGenerationBoundary.isExterior(chunk, ringworld$geometry)) return;
+        dev.ringworld.world.RingRiverWater.fill(chunk, new dev.ringworld.world.RingMacroTerrain(
+                ringworld$geometry, ringworld$generatorSeed, ringworld$generationSettings),
+                settings.value().seaLevel(), chunk::markPosForPostprocessing);
+    }
+
     @Redirect(
             method = "applyCarvers",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/levelgen/WorldgenRandom;setLargeFeatureSeed(JII)V"))

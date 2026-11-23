@@ -129,6 +129,19 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
         random.setLargeFeatureSeed(seed, ringworld$geometry == null ? x
                 : RingTerrainNoiseMapping.carverSeedChunkX(ringworld$geometry, ringworld$terrainNoiseMapping, x), z);
     }
+    /** Experiment 2026-11-22: carvers are the last step of 26.3's combined buildTerrain,
+     *  so this sees the final channel; see {@link dev.ringworld.world.RingRiverWater}. */
+    @Inject(method = "generateCarvers", at = @At("TAIL"))
+    private void ringworld$fillRiverChannel(ChunkAccess chunk, Blender blender,
+            net.minecraft.world.level.levelgen.NoiseChunk noise, RandomState state, BiomeManager biomes,
+            WorldGenRegion region, net.minecraft.world.level.levelgen.material.rule.MaterialRule rule,
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        if (ringworld$geometry == null || !ringworld$generationSettings.continuousRiver()
+                || RingGenerationBoundary.isExterior(chunk, ringworld$geometry)) return;
+        dev.ringworld.world.RingRiverWater.fill(chunk, new dev.ringworld.world.RingMacroTerrain(
+                ringworld$geometry, ringworld$generatorSeed, ringworld$generationSettings),
+                settings.value().seaLevel(), chunk::markPosForPostProcessing);
+    }
     @ModifyVariable(method = "iterateNoiseColumn", at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private int ringworld$canonicalizeHeightQueryX(int x) {
         return ringworld$geometry == null ? x : ringworld$geometry.wrapBlockX(x);

@@ -17,6 +17,34 @@ class RingMacroTerrainTest {
         assertTrue(field.riverInfluence(7_000, field.riverCenterZ(7_000)) > 0.99);
     }
 
+    /** Experiment 2026-11-22: the river must visibly wander and vary in width within a
+     *  player-scale stretch, while staying inside its original clearance from the rims. */
+    @Test
+    void riverMeandersLocallyAndStaysInsideItsRoom() {
+        RingWorldGenerationSettings settings = RingWorldGenerationSettings.DEFAULT
+                .withContinuousRiver(true);
+        double room = GEOMETRY.widthBlocks() * 0.21;
+        for (long seed : new long[]{1L, 991L, 123456789L}) {
+            RingMacroTerrain field = new RingMacroTerrain(GEOMETRY, seed, settings);
+            int windows = 0;
+            int wandering = 0;
+            for (int start = 0; start < GEOMETRY.circumferenceBlocks(); start += 1_000, windows++) {
+                double minZ = Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
+                double minW = Double.MAX_VALUE, maxW = -Double.MAX_VALUE;
+                for (int x = start; x < start + 1_000; x += 4) {
+                    double z = field.riverCenterZ(x);
+                    double w = field.riverWidth(x);
+                    assertTrue(Math.abs(z) <= room + 1.0e-9, "centre outside room at " + x);
+                    minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+                    minW = Math.min(minW, w); maxW = Math.max(maxW, w);
+                }
+                if (maxZ - minZ >= 8.0 && maxW - minW >= 1.0) wandering++;
+            }
+            assertTrue(wandering * 4 >= windows * 3,
+                    "seed " + seed + ": only " + wandering + "/" + windows + " 1000-block stretches wander");
+        }
+    }
+
     @Test
     void archipelagoIsPeriodicAndContainsWaterAndLand() {
         RingWorldGenerationSettings settings = RingWorldGenerationSettings.DEFAULT

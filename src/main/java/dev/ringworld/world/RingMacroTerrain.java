@@ -47,7 +47,27 @@ public final class RingMacroTerrain {
         return -0.82 + smooth * 1.82;
     }
 
-    /** Smooth, non-repeating-looking centreline assembled from periodic harmonics. */
+    /*
+     * River shape (experiment branch, 2026-11-22). The original centreline used only
+     * whole-ring harmonics 1..13, so on the default 16384-block ring its shortest wave was
+     * ~1260 blocks long and the width changed over ~2340 blocks: anywhere a player looks the
+     * river read as a straight, fixed-width channel. Local meander and width terms are now
+     * specified by WAVELENGTH IN BLOCKS and converted to the nearest whole ring harmonic
+     * k = round(C / wavelength), so every term is still exactly periodic at the X seam
+     * (sin(2*pi*k*x/C) with integer k) on any ring size. The total offset still stays within
+     * the original `room`, so the channel keeps the same clearance from the rims.
+     */
+    /** Share of `room` given to the ring-scale sweep; the rest goes to the local meander. */
+    private static final double RIVER_SWEEP_SHARE = 0.55;
+    /** Local meander wavelengths (blocks) and relative weights; each wavelength is jittered
+     *  +/-20 % per seed so different worlds don't share one rhythm. */
+    private static final double[] RIVER_MEANDER_WAVELENGTHS = {960.0, 430.0, 190.0};
+    private static final double[] RIVER_MEANDER_WEIGHTS = {1.0, 0.55, 0.25};
+    /** Width variation: two slow waves, total +/-20 % around 0.9 x base (0.72..1.08). */
+    private static final double[] RIVER_WIDTH_WAVELENGTHS = {720.0, 260.0};
+    private static final double[] RIVER_WIDTH_WEIGHTS = {0.6, 0.4};
+
+    /** Smooth, non-repeating-looking centreline: ring-scale sweep plus a local meander. */
     public double riverCenterZ(double blockX) {
         double angle = Math.PI * 2.0 * geometry.wrapX(blockX) / geometry.circumferenceBlocks();
         double room = Math.max(4.0, geometry.widthBlocks() * 0.21);
@@ -60,14 +80,36 @@ public final class RingMacroTerrain {
             value += Math.sin(angle * harmonic + phase) * amplitude;
             weight += amplitude;
         }
-        return value / weight * room;
+        double meander = periodicWaves(angle, 0x4D45414E4445524CL,
+                RIVER_MEANDER_WAVELENGTHS, RIVER_MEANDER_WEIGHTS);
+        return (RIVER_SWEEP_SHARE * value / weight + (1.0 - RIVER_SWEEP_SHARE) * meander) * room;
     }
 
     public double riverWidth(double blockX) {
         double angle = Math.PI * 2.0 * geometry.wrapX(blockX) / geometry.circumferenceBlocks();
         double base = Math.max(6.0, Math.min(15.0, geometry.widthBlocks() * 0.055));
-        double phase = unit(mix(seed ^ 0x57494454484C4F4FL)) * Math.PI * 2.0;
-        return base * (0.82 + 0.18 * Math.sin(angle * 7.0 + phase));
+        double variation = periodicWaves(angle, 0x57494454484C4F4FL,
+                RIVER_WIDTH_WAVELENGTHS, RIVER_WIDTH_WEIGHTS);
+        return base * (0.9 + 0.18 * variation);
+    }
+
+    /**
+     * Weighted sum of sines in [-1, 1]. Each wavelength (blocks, jittered +/-20 % by seed)
+     * becomes the nearest integer ring harmonic, so the result is seam-periodic.
+     */
+    private double periodicWaves(double angle, long salt, double[] wavelengths, double[] weights) {
+        double circumference = geometry.circumferenceBlocks();
+        double value = 0.0;
+        double weight = 0.0;
+        for (int i = 0; i < wavelengths.length; i++) {
+            long hash = mix(seed ^ salt ^ (i + 1) * 0xD1B54A32D192ED03L);
+            double wavelength = wavelengths[i] * (0.8 + 0.4 * unit(hash));
+            int harmonic = Math.max(1, (int)Math.round(circumference / wavelength));
+            double phase = unit(hash >>> 27) * Math.PI * 2.0;
+            value += Math.sin(angle * harmonic + phase) * weights[i];
+            weight += weights[i];
+        }
+        return value / weight;
     }
 
     /** 0 outside the banks, 1 in the channel core. */
