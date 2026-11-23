@@ -65,7 +65,8 @@
     "WorldEntityLookupMixin",
     "WorldTickSchedulerMixin",
     "LocatorWaypointServerMixin",
-    "LocatorAzimuthConnectionMixin"
+    "LocatorAzimuthConnectionMixin",
+    "ChunkGeneratorBandLocateMixin"
   ],
   "injectors": {
     "defaultRequire": 1
