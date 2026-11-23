@@ -6,6 +6,7 @@
     "FidelityGalleryWindowMixin",
     "CompassAngleStateFixtureAccessor",
     "CompassAngleStateMixin",
+    "LocatorWaypointImageMixin",
     "CreateWorldScreenInvoker",
     "CreateWorldScreenMixin",
     "CreateWorldSeedTabMixin",

@@ -63,7 +63,9 @@
     "SurfaceNoiseThresholdMixin",
     "SurfaceSystemMixin",
     "WorldEntityLookupMixin",
-    "WorldTickSchedulerMixin"
+    "WorldTickSchedulerMixin",
+    "LocatorWaypointServerMixin",
+    "LocatorAzimuthConnectionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
