@@ -75,4 +75,18 @@ class RingSkyCycleTest {
         assertEquals(atNoon.brightness(), before.brightness(), 0.0001F);
         assertEquals(atNoon.brightness(), after.brightness(), 0.0001F);
     }
+
+    @org.junit.jupiter.api.Test
+    void orbitalSunIsNeutralWellAboveTheHorizonAndWarmOnlyNearIt() {
+        // ~20 degrees up (local 1400 ticks after dawn): already the noon colour.
+        var morning = RingSkyCycle.orbitalSunVisual(1_400);
+        org.junit.jupiter.api.Assertions.assertEquals(1.0F, morning.brightness(), 1e-4F);
+        org.junit.jupiter.api.Assertions.assertTrue(morning.blue() > 0.9F);
+        // At the horizon: the warm dawn colour.
+        var dawn = RingSkyCycle.orbitalSunVisual(0);
+        org.junit.jupiter.api.Assertions.assertTrue(dawn.blue() < 0.35F);
+        // Halfway into the warm band it is partly reddened.
+        var low = RingSkyCycle.orbitalSunVisual(24_000 * Math.asin(0.05 / Math.cos(RingOrbitalDay.TILT_RADIANS)) / (2 * Math.PI));
+        org.junit.jupiter.api.Assertions.assertTrue(low.blue() > dawn.blue() && low.blue() < morning.blue());
+    }
 }

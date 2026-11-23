@@ -39,9 +39,16 @@ public record RingSkyView(WeakReference<ClientLevel> levelRef, RingGeometry geom
             lastLevel = level;
         }
         return new RingSkyView(level, geometry, eye, camera.getFluidInCamera(),
-                ClientRingState.skyProfile(), RingSkyCycle.sunVisual(world.getOverworldClockTime() + tickProgress),
+                ClientRingState.skyProfile(), sunVisual(world.getOverworldClockTime() + tickProgress),
                 (float)Math.atan2(direction.z, direction.y),
                 world == client.level && camera == RingMinecraftClientAccess.camera(client));
+    }
+
+    /** Orbital day: the client clock already reads local time, so colour follows local elevation. */
+    private static RingSkyCycle.SunVisual sunVisual(double timeOfDay) {
+        RingSkyProfile profile = ClientRingState.skyProfile();
+        return profile != null && profile.dayCycle() == RingSkyProfile.DayCycle.ORBITAL
+                ? RingSkyCycle.orbitalSunVisual(timeOfDay) : RingSkyCycle.sunVisual(timeOfDay);
     }
 
     public static RingSkyView current() { return active; }

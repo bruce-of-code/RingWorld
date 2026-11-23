@@ -35,8 +35,8 @@ float ring_orbital_daylight(float canonicalAngle, out float elevation) {
 
 vec3 ring_orbital_light(float daylight, float elevation) {
     vec3 night = vec3(0.045, 0.050, 0.085);
-    // Warm low sun near the terminator, neutral once it is well up.
-    vec3 day = mix(vec3(1.00, 0.66, 0.40), vec3(1.0), smoothstep(0.02, 0.35, elevation));
+    // Warm only in the last ~6 degrees: the ring's thin air reddens light just at the horizon.
+    vec3 day = mix(vec3(1.00, 0.66, 0.40), vec3(1.0), smoothstep(0.0, 0.10, elevation));
     return mix(night, day, daylight);
 }
 
