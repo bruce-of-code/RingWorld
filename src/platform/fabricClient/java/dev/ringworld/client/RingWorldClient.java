@@ -275,6 +275,30 @@ public final class RingWorldClient implements ClientModInitializer {
 
     private static void registerAtlasLightCommand() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            // Forward every /ringworld sub-command the client doesn't own to the server
+            // (experiment fix, 2026-11-22). Fabric runs client commands first and, when the
+            // root "ringworld" matches but the next word is not a client literal, reports
+            // "Incorrect argument for command" (dispatcherUnknownArgument is not one of the
+            // exceptions it passes through) instead of sending the command on, so every
+            // server-side /ringworld command (sky, sun, daycycle, atlas, ...) failed from a
+            // Fabric client. Brigadier prefers a matching literal, so client sub-commands
+            // still run locally; anything else lands here and goes to the server unchanged.
+            dispatcher.register(ClientCommands.literal("ringworld").then(
+                    ClientCommands.argument("server_command",
+                            com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                            .executes(context -> {
+                                var connection = Minecraft.getInstance().getConnection();
+                                if (connection == null) return 0;
+                                // Send the packet directly: ClientPacketListener.sendCommand is
+                                // hooked by Fabric to run client commands first, which re-entered
+                                // this node forever (StackOverflowError, 2026-11-22). RingWorld's
+                                // server commands take no signable message arguments, so the
+                                // unsigned packet is what vanilla itself would send.
+                                connection.send(new net.minecraft.network.protocol.game.ServerboundChatCommandPacket(
+                                        "ringworld " + com.mojang.brigadier.arguments
+                                                .StringArgumentType.getString(context, "server_command")));
+                                return 1;
+                            })));
             dispatcher.register(ClientCommands.literal("ringworld").then(
                 dev.ringworld.world.RingLodCommandSuggestions.shaderSupport(
                     context -> {
