@@ -34,6 +34,18 @@ abstract class CloudRendererMixin {
         ringworld$curvedFaces = curved;
     }
 
+    /** Experiment 2026-11-22: hand this frame's cloud inputs to the distant cloud ring. */
+    @Inject(method = {
+            "render(ILnet/minecraft/client/CloudStatus;FILnet/minecraft/world/phys/Vec3;JF)V",
+            "prepare(ILnet/minecraft/client/CloudStatus;FILnet/minecraft/world/phys/Vec3;JF)V"
+    }, at = @At("HEAD"))
+    private void ringworld$captureCloudFrame(int color, net.minecraft.client.CloudStatus status, float height,
+                                             int range, net.minecraft.world.phys.Vec3 camera, long gameTime,
+                                             float partialTick, CallbackInfo ci) {
+        dev.ringworld.client.render.RingCloudFrame.capture(color,
+                status != net.minecraft.client.CloudStatus.OFF, range, gameTime, partialTick);
+    }
+
     @ModifyVariable(method = {
             "render(ILnet/minecraft/client/CloudStatus;FILnet/minecraft/world/phys/Vec3;JF)V",
             "prepare(ILnet/minecraft/client/CloudStatus;FILnet/minecraft/world/phys/Vec3;JF)V"

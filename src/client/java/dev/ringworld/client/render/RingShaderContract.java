@@ -17,7 +17,7 @@ public final class RingShaderContract {
         String path = vertex.getPath();
         if (path.startsWith("core/")) path = path.substring(5);
         boolean owned = vertex.getNamespace().equals("ringworld");
-        if (owned && path.equals("ring_surface")) return vertex;
+        if (owned && (path.equals("ring_surface") || path.equals("ring_clouds"))) return vertex;
         if (!owned && !vertex.getNamespace().equals("minecraft")) return null;
         return switch (path) {
             case "terrain", "rendertype_clouds", "clouds" -> Identifier.fromNamespaceAndPath("ringworld", "core/" + path);

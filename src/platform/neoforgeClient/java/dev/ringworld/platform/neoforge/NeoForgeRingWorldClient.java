@@ -84,6 +84,7 @@ public final class NeoForgeRingWorldClient {
 
     private static void registerRenderPipelines(RegisterRenderPipelinesEvent event) {
         event.registerPipeline(dev.ringworld.client.render.RingSurfaceTextureRenderer.pipeline());
+        for (var pipeline : dev.ringworld.client.render.RingSurfaceTextureRenderer.extraPipelines()) event.registerPipeline(pipeline);
     }
 
     private static void registerPayloadHandlers(RegisterClientPayloadHandlersEvent event) {

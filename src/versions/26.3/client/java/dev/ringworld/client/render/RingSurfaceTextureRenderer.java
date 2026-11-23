@@ -100,6 +100,8 @@ public final class RingSurfaceTextureRenderer {
 
     /** Loader adapters register this pipeline during their client setup event. */
     public static RenderPipeline pipeline() { return RingSurfaceGpu.pipeline(); }
+    /** Other RingWorld sky pipelines to register alongside {@link #pipeline()}. */
+    public static java.util.List<RenderPipeline> extraPipelines() { return java.util.List.of(RingCloudRing.pipeline()); }
 
     public static void render(RenderTarget target, PoseStack matrices, RingSkyView view, float alpha) {
         RingGeometry geometry = view.geometry();

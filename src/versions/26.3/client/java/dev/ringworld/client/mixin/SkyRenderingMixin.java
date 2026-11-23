@@ -129,6 +129,8 @@ abstract class SkyRenderingMixin {
         if (view == null) return;
 
         RingSurfaceTextureRenderer.render(renderTarget, matrices, view, alpha);
+        // Experiment 2026-11-22: continue the clouds around the ring beyond vanilla's range.
+        dev.ringworld.client.render.RingCloudRing.render(renderTarget, matrices, view);
 
         // Vanilla drew stars after its first sun. The ring covers those stars
         // but stays behind the central star, so redraw the fixed sun once.
