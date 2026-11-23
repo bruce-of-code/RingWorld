@@ -115,6 +115,14 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
                 ringworld$generatorSeed, settings.value().seaLevel(), settings.value().noiseRouter());
         return RingClimateSampler.create(state);
     }
+    /** Experiment 2026-11-22: build the river course before terrain fill. */
+    @Inject(method = "buildTerrain", at = @At("HEAD"))
+    private void ringworld$ensureRiverCourseForTerrain(ChunkAccess chunk, Blender blender, RandomState state,
+            StructureManager structures, BiomeManager biomes, WorldGenRegion region,
+            java.util.Set<Holder<net.minecraft.world.level.biome.Biome>> possibleBiomes,
+            CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir) {
+        ringworld$riverTerrain(chunk, state);
+    }
     @Inject(method = "buildTerrain", at = @At("HEAD"), cancellable = true)
     private void ringworld$skipExteriorTerrain(ChunkAccess chunk, Blender blender, RandomState state,
             StructureManager structures, BiomeManager biomes, WorldGenRegion region,
@@ -145,6 +153,30 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     @ModifyVariable(method = "iterateNoiseColumn", at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private int ringworld$canonicalizeHeightQueryX(int x) {
         return ringworld$geometry == null ? x : ringworld$geometry.wrapBlockX(x);
+    }
+
+    @Override
+    public @Nullable dev.ringworld.world.RingMacroTerrain ringworld$riverTerrain(
+            net.minecraft.world.level.LevelHeightAccessor heights, RandomState randomState) {
+        if (ringworld$geometry == null || !ringworld$generationSettings.continuousRiver()) return null;
+        NoiseBasedChunkGenerator self = (NoiseBasedChunkGenerator)(Object)this;
+        dev.ringworld.world.RingRiverCourse.ensure(ringworld$geometry, ringworld$generatorSeed,
+                ringworld$generationSettings, settings.value().seaLevel(), ringworld$wallStyle.thicknessBlocks(),
+                (x, z) -> self.getBaseHeight(x, z,
+                        net.minecraft.world.level.levelgen.Heightmap.Types.OCEAN_FLOOR_WG, heights, randomState));
+        return new dev.ringworld.world.RingMacroTerrain(
+                ringworld$geometry, ringworld$generatorSeed, ringworld$generationSettings);
+    }
+
+    /** Experiment 2026-11-22: build the river course before any NoiseChunk exists on this
+     *  thread (structure / Atlas height queries arrive here first). */
+    @Inject(method = "iterateNoiseColumn", at = @At("HEAD"))
+    private void ringworld$ensureRiverCourseForColumn(net.minecraft.world.level.LevelHeightAccessor heights,
+            RandomState randomState, int x, int z,
+            org.apache.commons.lang3.mutable.MutableObject<net.minecraft.world.level.NoiseColumn> column,
+            java.util.function.Predicate<net.minecraft.world.level.block.state.BlockState> stopPredicate,
+            CallbackInfoReturnable<java.util.OptionalInt> cir) {
+        ringworld$riverTerrain(heights, randomState);
     }
     @Inject(method = "doFill", at = @At("TAIL"))
     private void ringworld$captureFixtureNoiseHeights(net.minecraft.world.level.levelgen.NoiseChunk noise,

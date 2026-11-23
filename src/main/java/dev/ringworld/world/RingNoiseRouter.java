@@ -147,7 +147,7 @@ public final class RingNoiseRouter {
                     // floor into natural banks before returning to untouched
                     // terrain. Aquifers and surface rules still own the water,
                     // bed material, decoration, and local cave interaction.
-                    double channelFloor = seaLevel - 7.0 + (1.0 - river) * 9.0;
+                    double channelFloor = RingMacroTerrain.riverChannelFloor(river, seaLevel);
                     if (river > 0.0 && pos.blockY() >= channelFloor) {
                         density = Math.min(density, -0.35 - river * 0.65);
                     }

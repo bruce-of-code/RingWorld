@@ -63,12 +63,31 @@ public final class RingMacroTerrain {
      *  +/-20 % per seed so different worlds don't share one rhythm. */
     private static final double[] RIVER_MEANDER_WAVELENGTHS = {960.0, 430.0, 190.0};
     private static final double[] RIVER_MEANDER_WEIGHTS = {1.0, 0.55, 0.25};
-    /** Width variation: two slow waves, total +/-20 % around 0.9 x base (0.72..1.08). */
-    private static final double[] RIVER_WIDTH_WAVELENGTHS = {720.0, 260.0};
+    /** Width variation: two waves spanning 0.60..1.08 x base. Narrowest is ~2/3 of the old
+     *  typical 0.9 x base; widest unchanged, so rim clearance is unchanged. Wavelengths halved
+     *  from 720/260 so the width changes within a player's view (owner request 2026-11-22). */
+    private static final double[] RIVER_WIDTH_WAVELENGTHS = {360.0, 130.0};
     private static final double[] RIVER_WIDTH_WEIGHTS = {0.6, 0.4};
 
-    /** Smooth, non-repeating-looking centreline: ring-scale sweep plus a local meander. */
+    /** Resolved lazily: the generator registers the course on first use (server only). */
+    private volatile RingRiverCourse riverCourse;
+
+    /**
+     * River centreline: the analytic line, nudged toward low terrain by the world's
+     * {@link RingRiverCourse} when one is registered (experiment, 2026-11-22).
+     */
     public double riverCenterZ(double blockX) {
+        double z0 = analyticRiverCenterZ(blockX);
+        RingRiverCourse course = riverCourse;
+        if (course == null && !RingRiverCourse.building()) {
+            course = RingRiverCourse.lookup(geometry, seed, settings);
+            if (course != null) riverCourse = course;
+        }
+        return course == null ? z0 : course.adjust(geometry.wrapX(blockX), z0);
+    }
+
+    /** Smooth, non-repeating-looking centreline: ring-scale sweep plus a local meander. */
+    double analyticRiverCenterZ(double blockX) {
         double angle = Math.PI * 2.0 * geometry.wrapX(blockX) / geometry.circumferenceBlocks();
         double room = Math.max(4.0, geometry.widthBlocks() * 0.21);
         double value = 0.0;
@@ -90,7 +109,7 @@ public final class RingMacroTerrain {
         double base = Math.max(6.0, Math.min(15.0, geometry.widthBlocks() * 0.055));
         double variation = periodicWaves(angle, 0x57494454484C4F4FL,
                 RIVER_WIDTH_WAVELENGTHS, RIVER_WIDTH_WEIGHTS);
-        return base * (0.9 + 0.18 * variation);
+        return base * (0.84 + 0.24 * variation);
     }
 
     /**
@@ -112,9 +131,19 @@ public final class RingMacroTerrain {
         return value / weight;
     }
 
+    /**
+     * Lowest Y the river's density carve clears at this influence: seven below sea level in
+     * the core, rising through the banks. Single source for the noise routers' FINAL_DENSITY
+     * carve and {@link RingRiverWater}, which must agree on which cells form the channel.
+     */
+    public static double riverChannelFloor(double river, int seaLevel) {
+        return seaLevel - 7.0 + (1.0 - river) * 9.0;
+    }
+
     /** 0 outside the banks, 1 in the channel core. */
     public double riverInfluence(double blockX, double blockZ) {
-        if (!settings.continuousRiver()) return 0.0;
+        // While the course is being built its height samples must see river-free terrain.
+        if (!settings.continuousRiver() || RingRiverCourse.building()) return 0.0;
         double distance = Math.abs(blockZ - riverCenterZ(blockX));
         double width = riverWidth(blockX);
         double bank = Math.max(5.0, width * 0.65);

@@ -50,6 +50,17 @@ abstract class ChunkGeneratorMixin {
         }
     }
 
+    /** Experiment 2026-11-22: biomes are the first stage that needs the river course. */
+    @Inject(method = "createBiomes", at = @At("HEAD"))
+    private void ringworld$ensureRiverCourseForBiomes(net.minecraft.world.level.levelgen.RandomState state,
+            net.minecraft.world.level.levelgen.blending.Blender blender, StructureManager structures,
+            ChunkAccess chunk,
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<
+                    java.util.concurrent.CompletableFuture<ChunkAccess>> cir) {
+        RingWorldGeneratorAccess access = ringworld$access();
+        if (access != null) access.ringworld$riverTerrain(chunk, state);
+    }
+
     @org.spongepowered.asm.mixin.injection.Redirect(method = "doCreateBiomes", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/level/chunk/ChunkAccess;fillBiomesFromNoise(Lnet/minecraft/world/level/biome/BiomeResolver;)V"))
     private void ringworld$riverBiome(ChunkAccess chunk, net.minecraft.world.level.biome.BiomeResolver resolver,
@@ -68,10 +79,19 @@ abstract class ChunkGeneratorMixin {
             chunk.fillBiomesFromNoise(resolver);
             return;
         }
-        var macro = new dev.ringworld.world.RingMacroTerrain(access.ringworld$getGeometry(),
-                state.seed(), access.ringworld$getGenerationSettings());
-        chunk.fillBiomesFromNoise((x, y, z) -> macro.riverInfluence(x << 2, z << 2) >= 0.72
-                ? river : resolver.getNoiseBiome(x, y, z));
+        // Generator seed + registered course, same as the terrain router (was state.seed()).
+        var macro = access.ringworld$riverTerrain(chunk, state);
+        if (macro == null) {
+            chunk.fillBiomesFromNoise(resolver);
+            return;
+        }
+        // Experiment 2026-11-22: the course now follows wide water, so never repaint an
+        // ocean as river; the channel through it keeps the ocean biome.
+        chunk.fillBiomesFromNoise((x, y, z) -> {
+            var biome = resolver.getNoiseBiome(x, y, z);
+            return macro.riverInfluence(x << 2, z << 2) >= 0.72
+                    && !biome.is(net.minecraft.tags.BiomeTags.IS_OCEAN) ? river : biome;
+        });
     }
 
     private RingWorldGeneratorAccess ringworld$access() {

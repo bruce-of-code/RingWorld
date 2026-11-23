@@ -109,7 +109,7 @@ public final class RingNoiseRouter implements DfRewriteRule {
                 case FINAL_DENSITY -> {
                     double band = Math.max(0.0, 1.0 - Math.abs(y - seaLevel) / 64.0);
                     double density = base + land * 0.36 * band;
-                    if (river > 0 && y >= seaLevel - 7.0 + (1.0 - river) * 9.0)
+                    if (river > 0 && y >= RingMacroTerrain.riverChannelFloor(river, seaLevel))
                         density = Math.min(density, -0.35 - river * 0.65);
                     yield density;
                 }

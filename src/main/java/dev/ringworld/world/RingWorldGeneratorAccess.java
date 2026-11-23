@@ -18,4 +18,14 @@ public interface RingWorldGeneratorAccess {
     void ringworld$setGenerationSettings(RingWorldGenerationSettings settings, long generatorSeed);
     RingWorldGenerationSettings ringworld$getGenerationSettings();
     Climate.Sampler ringworld$getPeriodicClimateSampler(RandomState randomState);
+
+    /**
+     * River macro terrain for this generator, with its terrain-aware course built first if it
+     * isn't yet (experiment, 2026-11-22). Call only where no NoiseChunk is live on this thread;
+     * see {@link RingRiverCourse}. Returns null when the world has no continuous river.
+     */
+    default @org.jetbrains.annotations.Nullable RingMacroTerrain ringworld$riverTerrain(
+            net.minecraft.world.level.LevelHeightAccessor heights, RandomState randomState) {
+        return null;
+    }
 }
