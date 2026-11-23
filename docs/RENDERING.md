@@ -787,7 +787,7 @@ Illumination is intentionally global rather than position-dependent.
 
 ### Orbital day cycle (experiment branch, 2026-11-22; 26.3 client)
 
-`/ringworld daycycle central|orbital` (saved in the sky profile, default `central`)
+`/ringworld daycycle central|orbital` (saved in the sky profile; new 26.3 worlds start `orbital`, existing saves and 26.1/26.2 stay `central`, see `RingVersionFeatures`)
 selects a second model: the star is far away, 15 degrees out of the ring's plane, and the
 ring spins once per Minecraft day. Local time is
 `world - (wrapX(x) / C) * 24000` (`RingOrbitalDay`); with that rule vanilla's sky axis

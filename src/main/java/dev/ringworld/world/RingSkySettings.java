@@ -48,7 +48,10 @@ public final class RingSkySettings extends SavedData {
 
     static RingSkySettings createForNewWorld(
             SavedDataStorage storage, RingSkyProfile profile) {
-        RingSkySettings created = new RingSkySettings(profile);
+        // The creation screen has no day-cycle choice, so new worlds take the
+        // version default (orbital where implemented). Existing saves keep theirs.
+        RingSkySettings created = new RingSkySettings(
+                profile.withDayCycle(RingVersionFeatures.NEW_WORLD_DAY_CYCLE));
         created.setDirty();
         storage.set(TYPE, created);
         return created;
