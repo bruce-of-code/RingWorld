@@ -45,7 +45,7 @@ public final class RingWorldGenerationScreen extends Screen {
             refresh();
         }).bounds(layout.left() + 12, layout.top() + 38, layout.width() - 24, 20).build());
         structuresButton = addRenderableWidget(Button.builder(structuresMessage(), button -> {
-            settings = settings.withMoreStructures(!settings.moreStructures());
+            settings = settings.withStructureAbundance(settings.structureAbundance().next());
             refresh();
         }).bounds(layout.left() + 12, layout.top() + 72, layout.width() - 24, 20).build());
 
@@ -69,8 +69,7 @@ public final class RingWorldGenerationScreen extends Screen {
     }
 
     private Component structuresMessage() {
-        return Component.literal("More structures: "
-                + (settings.moreStructures() ? "On" : "Off"));
+        return Component.literal("More structures: " + settings.structureAbundance().label());
     }
 
     @Override

@@ -217,7 +217,7 @@ public final class RingWorldCreationUiModel {
                 skyProfile.backdrop().label(), skyProfile.lightSource().label(),
                 generationSettings.layout().label(),
                 generationSettings.continuousRiver() ? "on" : "off",
-                generationSettings.moreStructures() ? "on" : "off",
+                generationSettings.structureAbundance().label(),
                 monumentChoice(requestOceanMonument, report.geometry()));
     }
 

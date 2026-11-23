@@ -66,7 +66,7 @@ public final class RingLayoutFingerprint {
                 generationSettings.atlasFidelity().id()) << 11));
         value = mix(value ^ (Integer.toUnsignedLong(generationSettings.layout().id()) << 19));
         value = mix(value ^ (generationSettings.continuousRiver() ? 0x52A1_7E2DL : 0L));
-        value = mix(value ^ (generationSettings.moreStructures() ? 0x6D31_904BL : 0L));
+        value = mix(value ^ generationSettings.structureAbundance().fingerprintSalt());
         value = mix(value ^ (Integer.toUnsignedLong(
                 generationSettings.formatVersion()) << 45));
         return mix(value ^ (Integer.toUnsignedLong(RingGenerationBoundary.RIM_STYLE_VERSION) << 25));

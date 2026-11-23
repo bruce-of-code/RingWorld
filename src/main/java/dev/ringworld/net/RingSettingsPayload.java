@@ -61,12 +61,13 @@ public record RingSettingsPayload(int width, int circumference, long seed, int w
                 buffer.writeVarInt(settings.atlasFidelity().id());
                 buffer.writeVarInt(settings.layout().id());
                 buffer.writeBoolean(settings.continuousRiver());
-                buffer.writeBoolean(settings.moreStructures());
+                buffer.writeVarInt(settings.structureAbundance().id());
                 buffer.writeVarInt(settings.formatVersion());
             }, buffer -> new RingWorldGenerationSettings(
                     RingAtlasFidelity.fromId(buffer.readVarInt()),
                     RingWorldLayout.fromId(buffer.readVarInt()),
-                    buffer.readBoolean(), buffer.readBoolean(), buffer.readVarInt()));
+                    buffer.readBoolean(), dev.ringworld.world.RingStructureAbundance.fromId(buffer.readVarInt()),
+                    buffer.readVarInt()));
     public static final StreamCodec<RegistryFriendlyByteBuf, RingSettingsPayload> CODEC = StreamCodec.composite(
             ByteBufCodecs.VAR_INT, RingSettingsPayload::width,
             ByteBufCodecs.VAR_INT, RingSettingsPayload::circumference,

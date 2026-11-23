@@ -60,7 +60,7 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
             properties.setProperty("atlasFidelity", RingAtlasFidelity.BALANCED.name());
             properties.setProperty("worldLayout", RingWorldLayout.VANILLA.name());
             properties.setProperty("continuousRingRiver", "false");
-            properties.setProperty("moreStructures", "false");
+            properties.setProperty("moreStructures", "VANILLA");
             properties.setProperty("testMode", "false");
             properties.setProperty("testViewDistanceChunks", "28");
             properties.setProperty("pregenerateTerrainAtlas", "true");
@@ -169,7 +169,7 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
         properties.setProperty("continuousRingRiver",
                 Boolean.toString(generationSettings.continuousRiver()));
         properties.setProperty("moreStructures",
-                Boolean.toString(generationSettings.moreStructures()));
+                generationSettings.structureAbundance().name());
         properties.setProperty("testMode", Boolean.toString(current.testMode()));
         properties.setProperty("testViewDistanceChunks",
                 Integer.toString(current.testViewDistanceChunks()));
@@ -289,8 +289,9 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
                             java.util.Locale.ROOT));
             boolean river = Boolean.parseBoolean(
                     properties.getProperty("continuousRingRiver", "false"));
-            boolean structures = Boolean.parseBoolean(
-                    properties.getProperty("moreStructures", "false"));
+            // VANILLA / ONE_AND_HALF / DOUBLE; legacy true/false still accepted.
+            RingStructureAbundance structures = RingStructureAbundance.parse(
+                    properties.getProperty("moreStructures", "VANILLA"));
             return new RingWorldGenerationSettings(
                     fidelity, layout, river, structures,
                     RingWorldGenerationSettings.FORMAT_VERSION);

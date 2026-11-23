@@ -249,7 +249,8 @@ public final class RingWorldCreationScreen extends Screen {
         if (layout().compact()) return Component.literal("Gen");
         String label = generationSettings.layout().label();
         if (generationSettings.continuousRiver()) label += "+R";
-        if (generationSettings.moreStructures()) label += "+S";
+        if (generationSettings.moreStructures())
+            label += "+S" + generationSettings.structureAbundance().label();
         return Component.literal("Gen: " + label);
     }
 

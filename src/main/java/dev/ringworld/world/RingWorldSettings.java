@@ -193,7 +193,7 @@ public final class RingWorldSettings extends SavedData {
                     config.widthBlocks());
         }
         RingStructurePolicy.createForNewWorld(manager, monumentRequest,
-                config.generationSettings().moreStructures());
+                config.generationSettings().structureAbundance());
         RingWorldMod.LOGGER.info(
                 "Created RingWorld layout: {}x{} blocks ({}x{} chunks), radius={}, centreY={}, "
                         + "wallTopY={}, cloudBaseY={}, atlasCells={}, terrainNoiseMapping={}",

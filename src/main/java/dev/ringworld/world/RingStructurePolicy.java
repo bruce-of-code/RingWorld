@@ -16,6 +16,9 @@ public final class RingStructurePolicy extends SavedData {
     public static final int GUARANTEE_STRONGHOLD = 1;
     public static final int REQUEST_OCEAN_MONUMENT = 1 << 1;
     public static final int INCREASE_STRUCTURE_DENSITY = 1 << 2;
+    /** With INCREASE_STRUCTURE_DENSITY: 1.5x instead of 2x. Older saves never set it, so their
+     *  plain "more structures" bit reads as 2x (experiment, 2026-11-22). */
+    public static final int STRUCTURE_ABUNDANCE_HALF = 1 << 3;
     public static final Identifier STORAGE_ID =
             Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "structure_policy");
 
@@ -59,17 +62,18 @@ public final class RingStructurePolicy extends SavedData {
 
     /** Called only in the same ownership path that creates first-world settings. */
     static RingStructurePolicy createForNewWorld(SavedDataStorage storage, boolean requestOceanMonument) {
-        return createForNewWorld(storage, requestOceanMonument, false);
+        return createForNewWorld(storage, requestOceanMonument, RingStructureAbundance.VANILLA);
     }
 
     /** Called only in the same ownership path that creates first-world settings. */
     static RingStructurePolicy createForNewWorld(SavedDataStorage storage, boolean requestOceanMonument,
-                                                  boolean increaseStructureDensity) {
+                                                  RingStructureAbundance abundance) {
         RingStructurePolicy existing = storage.get(TYPE);
         if (existing != null) return existing;
         int guarantees = GUARANTEE_STRONGHOLD
                 | (requestOceanMonument ? REQUEST_OCEAN_MONUMENT : 0)
-                | (increaseStructureDensity ? INCREASE_STRUCTURE_DENSITY : 0);
+                | (abundance != RingStructureAbundance.VANILLA ? INCREASE_STRUCTURE_DENSITY : 0)
+                | (abundance == RingStructureAbundance.ONE_AND_HALF ? STRUCTURE_ABUNDANCE_HALF : 0);
         RingStructurePolicy created = new RingStructurePolicy(guarantees, FORMAT_VERSION,
                 requestOceanMonument ? RingMonumentResolution.pending() : RingMonumentResolution.disabled());
         created.setDirty();
@@ -118,5 +122,11 @@ public final class RingStructurePolicy extends SavedData {
 
     public boolean increasesStructureDensity() {
         return (guarantees & INCREASE_STRUCTURE_DENSITY) != 0;
+    }
+
+    public RingStructureAbundance structureAbundance() {
+        if (!increasesStructureDensity()) return RingStructureAbundance.VANILLA;
+        return (guarantees & STRUCTURE_ABUNDANCE_HALF) != 0
+                ? RingStructureAbundance.ONE_AND_HALF : RingStructureAbundance.DOUBLE;
     }
 }

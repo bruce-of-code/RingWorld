@@ -181,8 +181,8 @@ public final class RingWorldEditorScreen extends Screen {
     private void terrainWidgets(Bounds b) {
         int y = b.top() + 68;
         addRenderableWidget(Button.builder(Component.literal("More structures: "
-                        + onOff(generation.moreStructures())), button -> {
-                    generation = generation.withMoreStructures(!generation.moreStructures());
+                        + generation.structureAbundance().label()), button -> {
+                    generation = generation.withStructureAbundance(generation.structureAbundance().next());
                     rebuild();
                 }).bounds(b.x(), y, b.innerWidth(), 20).build());
         y += b.compact() ? 42 : 48;
