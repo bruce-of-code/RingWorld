@@ -73,7 +73,10 @@
     "OrbitalLevelDaylightMixin",
     "OrbitalServerLevelMixin",
     "OrbitalServerPlayerMixin",
-    "OrbitalPhantomSpawnerMixin"
+    "OrbitalPhantomSpawnerMixin",
+    "OrbitalPatrolSpawnerMixin",
+    "OrbitalVillageSiegeMixin",
+    "OrbitalClockInstanceAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

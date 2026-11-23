@@ -152,6 +152,14 @@ public final class RingServerOrbital {
         return !level.dimensionType().hasFixedTime() && skyDarkenAt(level, blockX) < 4;
     }
 
+    /** True only if no (non-spectator) player is in local night: the orbital "sky is bright". */
+    public static boolean brightForAllPlayers(ServerLevel level) {
+        for (ServerPlayer player : level.players()) {
+            if (!player.isSpectator() && !brightAt(level, player.getX())) return false;
+        }
+        return true;
+    }
+
     /** Players who count for sleep: asleep already, or in local night where they stand. */
     public static List<ServerPlayer> sleepCandidates(ServerLevel level, List<ServerPlayer> players) {
         if (!activeFor(level)) return players;
