@@ -3,8 +3,9 @@
 An outside contribution on top of RingWorld `main`. Take any commit, any
 part of one, or nothing. None of it has been through RingWorld's own
 qualification process, so treat every change as a candidate that needs your
-normal review and test runs. This file is the only commit here that is not
-meant to be merged.
+normal review and test runs. The two `Docs:` commits (this file, and the
+README banner with screenshots under `docs/contrib-26.3/`) are not meant to be
+merged.
 
 - Base: upstream `main` at `725a973` (the Distant Horizons handoff), linear
   history, no merges.

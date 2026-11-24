@@ -1,5 +1,19 @@
 # RingWorld
 
+> **This is the `contrib-26.3` branch**, an outside contribution for Minecraft 26.3 Fabric
+> (seam and rim fixes, river and structure changes, a distant cloud ring, and an orbital day
+> cycle). See [`BRANCH_NOTES.md`](BRANCH_NOTES.md) for every commit, its dependencies and how
+> it was tested. This banner and the screenshots are not meant to be merged.
+
+<p align="center">
+  <img src="docs/contrib-26.3/orbital-local-night.png" width="49%"
+       alt="Orbital day cycle at local night: the far side of the ring overhead is in daylight">
+  <img src="docs/contrib-26.3/orbital-local-day.png" width="49%"
+       alt="Orbital day cycle in local daytime: the sun is up and the nearby ring is lit while the far side overhead is in night">
+</p>
+<p align="center"><sub>Orbital day cycle. Left: local night, with the far side of the ring overhead in daylight.
+Right: local daytime, with the nearby ring lit and the far side overhead in night.</sub></p>
+
 RingWorld turns Minecraft's Overworld into a finite world that genuinely
 loops back into itself.
 
