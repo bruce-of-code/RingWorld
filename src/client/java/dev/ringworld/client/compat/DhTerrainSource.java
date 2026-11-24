@@ -31,6 +31,7 @@ final class DhTerrainSource {
     private static int revision;
     private static Object preview;
     private static RingTerrainAtlas selected;
+    private static int selectedServerRevision;
 
     static boolean register() {
         if (DhApi.getApiMajorVersion() != 7 || DhApi.getApiMinorVersion() < 2) {
@@ -76,7 +77,7 @@ final class DhTerrainSource {
         }
         long now = System.nanoTime();
         if (reader == null
-                && selected == placeholder
+                && (selected == placeholder || selected == serverAtlas)
                 && RingSurfaceTextureRenderer.displayReady()
                 && now >= nextLookup) {
             nextLookup = now + 500_000_000L;
@@ -104,10 +105,17 @@ final class DhTerrainSource {
             }
         }
         var ready = reader == null ? null : reader.ready;
-        var current = ready == null ? placeholder : ready;
-        if (selected != current || (ready == null && ClientRingState.terrainPreview() != preview)) {
+        // Until the DH surface covers the whole ring, a complete server Atlas beats the
+        // placeholder. Client-only DH on a remote server only caches chunks the player has
+        // loaded, so without this the placeholder would stay up indefinitely there.
+        var current = ready != null ? ready : serverAtlas.isComplete() ? serverAtlas : placeholder;
+        int serverRevision = ClientRingState.terrainAtlasRevision();
+        if (selected != current
+                || (current == placeholder && ClientRingState.terrainPreview() != preview)
+                || (current == serverAtlas && serverRevision != selectedServerRevision)) {
             selected = current;
             preview = ClientRingState.terrainPreview();
+            selectedServerRevision = serverRevision;
             revision++;
         }
         return current;
