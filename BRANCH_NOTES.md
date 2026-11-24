@@ -3,9 +3,10 @@
 An outside contribution on top of RingWorld `main`. Take any commit, any
 part of one, or nothing. None of it has been through RingWorld's own
 qualification process, so treat every change as a candidate that needs your
-normal review and test runs. The two `Docs:` commits (this file, and the
-README banner with screenshots under `docs/contrib-26.3/`) are not meant to be
-merged.
+normal review and test runs. The `Docs:` commits (this file, and the README
+banner with screenshots under `docs/contrib-26.3/`) are not meant to be merged.
+The Distant Horizons fix `6b3ad89` was added after them; it is listed with the
+other fixes below.
 
 - Base: upstream `main` at `725a973` (the Distant Horizons handoff), linear
   history, no merges.
@@ -14,8 +15,8 @@ merged.
   NeoForge was neither built nor run.
 - Build used: Java 25,
   `./gradlew :build -Pminecraft_version=26.3 -Ploader_version=0.19.5 -Ploom_version=1.17.21 -Pfabric_api_version=0.160.5+26.3 -Pneoforge_version=26.3.0.7-beta -Pmoddevgradle_version=2.0.147`.
-  The branch builds and passes all existing and new tests both at the end
-  of the fixes group (`0eb6b65`) and at the tip.
+  The branch builds and passes all existing and new tests at the end of the
+  first three fixes (`0eb6b65`) and at the tip.
 - License: MPL-2.0, unchanged. Contributions are offered under the same
   terms.
 
@@ -40,6 +41,7 @@ tests only.
 | `3b2a043` | Fabric client commands swallowed server-only `/ringworld` sub-commands ("Incorrect argument ... position 10"). Adds a greedy client catch-all that sends `ServerboundChatCommandPacket` directly (calling `sendCommand` recursed into the catch-all). | none | verified in game |
 | `ea4e39b` | Locator bar across the seam: the client picks the waypoint image nearest the camera; the server uses shortest-circumference distance for the 332-block azimuth cutoff and for the azimuth itself. | `a9b0723` | untested |
 | `0eb6b65` | Explorer / buried-treasure maps and `/locate` pointed beyond the rims. Exterior void chunks still sample real biomes, so vanilla's random-spread search found starts there. Candidates whose locate position is outside the band interior are now skipped. | `a9b0723` | test server: before, buried treasure, mansion, monument and village were all found at \|Z\| > 128; after, all on the band or "not found" |
+| `6b3ad89` | **Distant Horizons on a multiplayer server**: with DH installed, the far ring showed the placeholder until DH had surface data for every canonical chunk, ignoring the server Atlas. Client-only DH on a remote server only caches chunks the player has loaded, so the placeholder stayed up indefinitely. `DhTerrainSource.select` now prefers a complete server Atlas over the placeholder until the DH surface is ready, and follows server Atlas republishes. Shared client code (all versions), sits at the branch tip. | none | verified in game on a dedicated server (DH 3.3.4, client-only) |
 
 ### 2. World generation
 
