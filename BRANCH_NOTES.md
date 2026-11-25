@@ -5,8 +5,9 @@ part of one, or nothing. None of it has been through RingWorld's own
 qualification process, so treat every change as a candidate that needs your
 normal review and test runs. The `Docs:` commits (this file, and the README
 banner with screenshots under `docs/contrib-26.3/`) are not meant to be merged.
-The Distant Horizons fix `6b3ad89` was added after them; it is listed with the
-other fixes below.
+The Distant Horizons fix `6b3ad89` and the later fixes `2663219` and `ea0b9b5`
+were added after them; they are listed with the other fixes below. Planned work
+is in `docs/contrib-26.3/WORK_PLAN.md`.
 
 - Base: upstream `main` at `725a973` (the Distant Horizons handoff), linear
   history, no merges.
@@ -42,6 +43,8 @@ tests only.
 | `ea4e39b` | Locator bar across the seam: the client picks the waypoint image nearest the camera; the server uses shortest-circumference distance for the 332-block azimuth cutoff and for the azimuth itself. | `a9b0723` | untested |
 | `0eb6b65` | Explorer / buried-treasure maps and `/locate` pointed beyond the rims. Exterior void chunks still sample real biomes, so vanilla's random-spread search found starts there. Candidates whose locate position is outside the band interior are now skipped. | `a9b0723` | test server: before, buried treasure, mansion, monument and village were all found at \|Z\| > 128; after, all on the band or "not found" |
 | `6b3ad89` | **Distant Horizons on a multiplayer server**: with DH installed, the far ring showed the placeholder until DH had surface data for every canonical chunk, ignoring the server Atlas. Client-only DH on a remote server only caches chunks the player has loaded, so the placeholder stayed up indefinitely. `DhTerrainSource.select` now prefers a complete server Atlas over the placeholder until the DH surface is ready, and follows server Atlas republishes. Shared client code (all versions), sits at the branch tip. | none | verified in game on a dedicated server (DH 3.3.4, client-only) |
+| `2663219` | **Fix for `ea4e39b`**: a second player joining kicked both players. `ea4e39b` put a helper class in the mixin package, which Mixin refuses to load; it failed on the first waypoint connection between two players. The helper is now a private static method in each locator mixin. Take it with `ea4e39b`. | `ea4e39b` | build only; needs a two-player test |
+| `ea0b9b5` | **Atlas cache on a busy server**: the client cache was used only at the server's exact revision, which surface edits keep bumping, so every join started with an empty far ring and re-streamed every tile (about ten minutes on a server behind on ticks). The client now shows its stale cache at once; the full stream still overwrites it. Stopgap for work plan item 1b. | none | build only |
 
 ### 2. World generation
 
