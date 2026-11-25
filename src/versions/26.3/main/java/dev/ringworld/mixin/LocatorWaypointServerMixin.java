@@ -21,19 +21,15 @@ abstract class LocatorWaypointServerMixin {
     @WrapOperation(method = "makeWaypointConnectionWith", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/waypoints/WaypointTransmitter;isReallyFar(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/server/level/ServerPlayer;)Z"))
     private boolean ringworld$reallyFarRoundTheRing(LivingEntity source, ServerPlayer receiver, Operation<Boolean> original) {
-        RingGeometry geometry = LocatorWaypointRing.geometry(source.level());
+        RingGeometry geometry = ringworld$geometry(source.level());
         if (geometry == null) return original.call(source, receiver);
         double dx = geometry.shortestCircumferenceDelta(source.getX(), receiver.getX());
         double dy = receiver.getY() - source.getY();
         double dz = receiver.getZ() - source.getZ();
         return dx * dx + dy * dy + dz * dz > 332.0 * 332.0;
     }
-}
 
-final class LocatorWaypointRing {
-    private LocatorWaypointRing() { }
-
-    static RingGeometry geometry(Level level) {
+    private static RingGeometry ringworld$geometry(Level level) {
         return level instanceof ServerLevel server && level.dimension() == Level.OVERWORLD
                 ? RingWorldServer.geometryFor(server) : null;
     }
