@@ -269,6 +269,9 @@ public final class RingTerrainAtlas {
         return revision;
     }
 
+    /** A client cache from an older server revision: shown as a preview, never trusted as current. */
+    public void markStaleCache() { revision = 0L; }
+
     /** Commits a fully received authoritative revision without allowing rollback. */
     public boolean commitRevision(long incomingRevision) throws IOException {
         if (incomingRevision < 0L) throw new IOException("negative terrain atlas revision");

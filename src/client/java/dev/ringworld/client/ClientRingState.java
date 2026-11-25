@@ -260,6 +260,17 @@ public final class ClientRingState {
                 if (Files.exists(cache)) {
                     cached = RingTerrainAtlas.loadMatchingCache(cache, current, metadata.worldHash(),
                             metadata.revision(), metadata.sampleStep(), metadata.contentFingerprint()).orElse(empty);
+                    if (cached == empty) {
+                        // A busy server bumps the atlas revision on every surface edit, so an
+                        // exact match is rare and a full re-stream can take minutes. Show the
+                        // stale cache now; the full stream still overwrites every tile. Revision
+                        // 0 keeps the request a cache miss and lets the server's commit land.
+                        RingTerrainAtlas stale = RingTerrainAtlas.load(cache, current, metadata.worldHash());
+                        if (stale.sampleStep() == metadata.sampleStep()) {
+                            stale.markStaleCache();
+                            cached = stale;
+                        }
+                    }
                 }
             } catch (IOException exception) {
                 RingWorldMod.LOGGER.warn("Ignoring invalid client RingWorld terrain cache {}", cache, exception);
